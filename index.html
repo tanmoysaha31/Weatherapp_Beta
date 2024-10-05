@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
+            color: #333;
+            transition: background-color 0.5s ease;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        #weather-form {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #city {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #result {
+            display: none;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #current-weather {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        #current-temp {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        #current-description {
+            font-size: 24px;
+            margin-top: 10px;
+        }
+        #forecast {
+            display: flex;
+            justify-content: center;  
+            flex-wrap: wrap;
+            gap: 20px;
+            
+             
+        }
+        .forecast-item {
+            flex-basis: calc(20% - 20px);
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            
+        }
+        .forecast-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Weather App</h1>
+    <form id="weather-form">
+        <input type="text" id="city" placeholder="Enter city (and country)" required>
+        <button type="submit">Get Weather</button>
+    </form>
+    <div id="result">
+        <div id="current-weather">
+            <h2 style="text-align: center;">Current Weather</h2>
+            <div id="current-temp"></div>
+            <div id="current-description"></div>
+            <img id="current-icon" src="" alt="Weather icon">
+        </div>
+        
+        <h2 style="text-align: center;">5-Day Forecast</h2>
+        <div id="forecast"></div>
+    </div>
+    <div id="error-message"></div>
+
+    <script>
+        document.getElementById('weather-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const city = document.getElementById('city').value;
+            
+            fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `city=${encodeURIComponent(city)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error_message) {
+                    document.getElementById('error-message').textContent = data.error_message;
+                    document.getElementById('result').style.display = 'none';
+                } else {
+                    document.getElementById('error-message').textContent = '';
+                    document.getElementById('result').style.display = 'block';
+                    
+                    // Display current weather
+                    const currentTemp = data.current_weather.main.temp;
+                    document.getElementById('current-temp').textContent = `${currentTemp}\u00B0C`;  // Using Unicode for degree symbol
+                    document.getElementById('current-description').textContent = data.current_weather.weather[0].description;
+                    document.getElementById('current-icon').src = `http://openweathermap.org/img/wn/${data.current_weather.weather[0].icon}@2x.png`;
+                    
+                    // Change background color based on temperature
+                    document.body.style.backgroundColor = getBackgroundColor(currentTemp);
+                    
+                    // Display forecast
+                    const forecastDiv = document.getElementById('forecast');
+                    forecastDiv.innerHTML = '';
+                    data.forecast.forEach(day => {
+                        const dayDiv = document.createElement('div');
+                        dayDiv.className = 'forecast-item';
+                        dayDiv.innerHTML = `
+                            <p>${day.date}</p>
+                            <p>${day.temp}\u00B0C</p>
+                            <p>${day.description}</p>
+                            <img src="http://openweathermap.org/img/wn/${day.icon}.png" alt="Weather icon">
+                        `;
+                        forecastDiv.appendChild(dayDiv);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('error-message').textContent = 'An error occurred. Please try again.';
+            });
+        });
+
+        function getBackgroundColor(temperature) {
+            if (temperature < 0) return '#e0f7fa';  // Very cold (light blue)
+            if (temperature < 10) return '#b3e5fc';  // Cold (lighter blue)
+            if (temperature < 20) return '#fff9c4';  // Mild (light yellow)
+            if (temperature < 30) return '#ffe0b2';  // Warm (light orange)
+            return '#ffccbc';  // Hot (light red)
+        }
+    </script>
+</body>
+</html>
